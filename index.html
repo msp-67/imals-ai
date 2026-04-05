@@ -47,8 +47,36 @@ body {
 }
 
 /* ── SCREENS ── */
-.screen { display: none; flex-direction: column; height: 100dvh; }
-.screen.active { display: flex; }
+.screen {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  position: fixed;
+  inset: 0;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+  background: var(--bg);
+  visibility: hidden;
+}
+.screen.active {
+  transform: translateX(0);
+  visibility: visible;
+}
+.screen.slide-out {
+  transform: translateX(-30%);
+  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+#chat-screen {
+  transform: translateX(0);
+  visibility: visible;
+}
+#chat-screen.slide-out {
+  transform: translateX(-30%);
+}
+#setup-screen {
+  transform: translateX(0);
+}
 
 /* ── SETUP SCREEN ── */
 #setup-screen {
@@ -1010,19 +1038,50 @@ function init() {
     }
   }, { passive: true });
 
-  // Global swipe back (from left edge) for history and settings screens
+  // Global swipe back (from left edge) with interactive drag
   let globalTouchStartX = 0;
+  let isDraggingBack = false;
+
   document.addEventListener('touchstart', e => {
     globalTouchStartX = e.touches[0].clientX;
+    isDraggingBack = false;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    const activeScreen = document.querySelector('.screen.active');
+    if (!activeScreen || activeScreen.id === 'chat-screen' || activeScreen.id === 'setup-screen') return;
+    const dx = e.touches[0].clientX - globalTouchStartX;
+    if (globalTouchStartX < 40 && dx > 0) {
+      isDraggingBack = true;
+      const prev = document.getElementById(screenHistory[screenHistory.length - 2] || 'chat-screen');
+      const progress = Math.min(dx / window.innerWidth, 1);
+      activeScreen.style.transform = `translateX(${dx}px)`;
+      activeScreen.style.transition = 'none';
+      prev.classList.add('active');
+      prev.style.transform = `translateX(${-30 + progress * 30}%)`;
+      prev.style.transition = 'none';
+    }
   }, { passive: true });
 
   document.addEventListener('touchend', e => {
+    if (!isDraggingBack) return;
+    isDraggingBack = false;
     const activeScreen = document.querySelector('.screen.active');
-    if (!activeScreen || activeScreen.id === 'chat-screen' || activeScreen.id === 'setup-screen') return;
     const dx = e.changedTouches[0].clientX - globalTouchStartX;
-    const dy = Math.abs(e.changedTouches[0].clientY - e.touches?.[0]?.clientY || 0);
-    if (globalTouchStartX < 40 && dx > 60) {
+    if (dx > window.innerWidth * 0.4) {
       goBack();
+    } else {
+      // Snap back
+      const screens = document.querySelectorAll('.screen.active');
+      screens.forEach(s => {
+        s.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        if (s === activeScreen) {
+          s.style.transform = 'translateX(0)';
+        } else {
+          s.style.transform = 'translateX(-30%)';
+          setTimeout(() => { s.classList.remove('active'); s.style.transform = ''; }, 300);
+        }
+      });
     }
   }, { passive: true });
 }
@@ -1038,30 +1097,89 @@ let screenHistory = ['chat-screen'];
 
 function showScreen(id) {
   const current = document.querySelector('.screen.active');
-  if (current && current.id !== id) screenHistory.push(id);
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  if (id === 'history-screen') renderHistory();
+  if (!current || current.id === id) return;
+
+  const next = document.getElementById(id);
+  screenHistory.push(id);
+
+  // Slide next screen in from right, push current left
+  current.classList.add('slide-out');
+  next.classList.add('active');
+
+  requestAnimationFrame(() => {
+    if (id === 'history-screen') renderHistory();
+  });
+
+  current.addEventListener('transitionend', () => {
+    current.classList.remove('active', 'slide-out');
+  }, { once: true });
 }
 
 function goBack() {
-  if (screenHistory.length > 1) {
-    screenHistory.pop();
-    const prev = screenHistory[screenHistory.length - 1];
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(prev).classList.add('active');
-    if (prev === 'history-screen') renderHistory();
-    haptic('light');
-  }
+  if (screenHistory.length <= 1) return;
+  screenHistory.pop();
+  const prevId = screenHistory[screenHistory.length - 1];
+  const current = document.querySelector('.screen.active');
+  const prev = document.getElementById(prevId);
+
+  // Slide current out to right, bring prev back from left
+  prev.classList.add('active');
+  prev.style.transform = 'translateX(-30%)';
+  prev.style.transition = 'none';
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      prev.style.transition = '';
+      prev.style.transform = '';
+      current.style.transform = 'translateX(100%)';
+      current.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    });
+  });
+
+  current.addEventListener('transitionend', () => {
+    current.classList.remove('active');
+    current.style.transform = '';
+    current.style.transition = '';
+  }, { once: true });
+
+  haptic('light');
 }
 
 function goHome() {
   if (messages.length > 0) saveCurrentChat();
   messages = [];
   currentChatId = null;
+  const current = document.querySelector('.screen.active');
+  const chat = document.getElementById('chat-screen');
+
+  if (current.id === 'chat-screen') {
+    renderWelcome();
+    return;
+  }
+
   screenHistory = ['chat-screen'];
-  showScreen('chat-screen');
-  renderWelcome();
+  chat.classList.add('active');
+  chat.style.transform = 'translateX(-30%)';
+  chat.style.transition = 'none';
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      chat.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      chat.style.transform = '';
+      current.style.transform = 'translateX(100%)';
+      current.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    });
+  });
+
+  current.addEventListener('transitionend', () => {
+    current.classList.remove('active');
+    current.style.transform = '';
+    current.style.transition = '';
+    chat.style.transform = '';
+    chat.style.transition = '';
+    renderWelcome();
+  }, { once: true });
+
   haptic('light');
 }
 
