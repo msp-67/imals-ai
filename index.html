@@ -57,22 +57,15 @@ body {
   transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   will-change: transform;
   background: var(--bg);
-  visibility: hidden;
+  pointer-events: none;
 }
 .screen.active {
   transform: translateX(0);
-  visibility: visible;
-}
-.screen.slide-out {
-  transform: translateX(-30%);
-  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  pointer-events: all;
 }
 #chat-screen {
   transform: translateX(0);
-  visibility: visible;
-}
-#chat-screen.slide-out {
-  transform: translateX(-30%);
+  pointer-events: all;
 }
 #setup-screen {
   transform: translateX(0);
@@ -1098,21 +1091,21 @@ let screenHistory = ['chat-screen'];
 function showScreen(id) {
   const current = document.querySelector('.screen.active');
   if (!current || current.id === id) return;
-
   const next = document.getElementById(id);
   screenHistory.push(id);
 
-  // Slide next screen in from right, push current left
-  current.classList.add('slide-out');
+  // Push current left, slide next in from right
+  current.style.transform = 'translateX(-30%)';
+  current.classList.remove('active');
   next.classList.add('active');
+  next.style.transform = 'translateX(100%)';
 
   requestAnimationFrame(() => {
-    if (id === 'history-screen') renderHistory();
+    requestAnimationFrame(() => {
+      next.style.transform = '';
+      if (id === 'history-screen') renderHistory();
+    });
   });
-
-  current.addEventListener('transitionend', () => {
-    current.classList.remove('active', 'slide-out');
-  }, { once: true });
 }
 
 function goBack() {
@@ -1122,25 +1115,21 @@ function goBack() {
   const current = document.querySelector('.screen.active');
   const prev = document.getElementById(prevId);
 
-  // Slide current out to right, bring prev back from left
   prev.classList.add('active');
-  prev.style.transform = 'translateX(-30%)';
   prev.style.transition = 'none';
+  prev.style.transform = 'translateX(-30%)';
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       prev.style.transition = '';
       prev.style.transform = '';
       current.style.transform = 'translateX(100%)';
-      current.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      setTimeout(() => {
+        current.classList.remove('active');
+        current.style.transform = '';
+      }, 350);
     });
   });
-
-  current.addEventListener('transitionend', () => {
-    current.classList.remove('active');
-    current.style.transform = '';
-    current.style.transition = '';
-  }, { once: true });
 
   haptic('light');
 }
@@ -1159,26 +1148,21 @@ function goHome() {
 
   screenHistory = ['chat-screen'];
   chat.classList.add('active');
-  chat.style.transform = 'translateX(-30%)';
   chat.style.transition = 'none';
+  chat.style.transform = 'translateX(-30%)';
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      chat.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      chat.style.transition = '';
       chat.style.transform = '';
       current.style.transform = 'translateX(100%)';
-      current.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      setTimeout(() => {
+        current.classList.remove('active');
+        current.style.transform = '';
+        renderWelcome();
+      }, 350);
     });
   });
-
-  current.addEventListener('transitionend', () => {
-    current.classList.remove('active');
-    current.style.transform = '';
-    current.style.transition = '';
-    chat.style.transform = '';
-    chat.style.transition = '';
-    renderWelcome();
-  }, { once: true });
 
   haptic('light');
 }
