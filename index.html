@@ -1012,8 +1012,7 @@ function init() {
     document.getElementById('send-btn').disabled = input.value.trim() === '';
   });
 
-  // Swipe between modes
-  const modeKeys = Object.keys(MODES);
+  // Swipe between modes only
   let touchStartX = 0;
   let touchStartY = 0;
   const chatScreen = document.getElementById('chat-screen');
@@ -1037,62 +1036,6 @@ function init() {
       setMode(next);
       haptic('light');
       showToast(MODES[next.dataset.mode].label);
-    }
-  }, { passive: true });
-
-  // Global swipe back (from left edge)
-  let globalTouchStartX = 0;
-  let swipingBack = false;
-
-  document.addEventListener('touchstart', e => {
-    globalTouchStartX = e.touches[0].clientX;
-    swipingBack = false;
-  }, { passive: true });
-
-  document.addEventListener('touchmove', e => {
-    if (screenHistory.length <= 1) return;
-    const currentId = screenHistory[screenHistory.length - 1];
-    if (currentId === 'chat-screen' || currentId === 'setup-screen') return;
-    const dx = e.touches[0].clientX - globalTouchStartX;
-    if (globalTouchStartX < 30 && dx > 10) {
-      swipingBack = true;
-      const current = document.getElementById(currentId);
-      const prevId = screenHistory[screenHistory.length - 2];
-      const prev = document.getElementById(prevId);
-      const progress = Math.min(dx / window.innerWidth, 1);
-      current.style.transition = 'none';
-      current.style.transform = `translateX(${dx}px)`;
-      prev.style.transition = 'none';
-      prev.style.transform = `translateX(${-28 + progress * 28}%)`;
-      prev.classList.add('active');
-    }
-  }, { passive: true });
-
-  document.addEventListener('touchend', e => {
-    if (!swipingBack) return;
-    swipingBack = false;
-    const currentId = screenHistory[screenHistory.length - 1];
-    const current = document.getElementById(currentId);
-    const prevId = screenHistory[screenHistory.length - 2];
-    const prev = document.getElementById(prevId);
-    const dx = e.changedTouches[0].clientX - globalTouchStartX;
-
-    current.style.transition = '';
-    prev.style.transition = '';
-
-    if (dx > window.innerWidth * 0.35) {
-      current.style.transform = 'translateX(100%)';
-      prev.style.transform = '';
-      prev.classList.add('active');
-      prev.classList.remove('behind');
-      setTimeout(() => { current.classList.remove('active'); current.style.transform = ''; }, 320);
-      screenHistory.pop();
-      haptic('light');
-    } else {
-      current.style.transform = '';
-      prev.style.transform = 'translateX(-28%)';
-      prev.classList.remove('active');
-      prev.classList.add('behind');
     }
   }, { passive: true });
 }
