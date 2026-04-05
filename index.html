@@ -78,6 +78,7 @@ body {
 #setup-screen {
   transform: translateX(0);
   z-index: 10;
+  pointer-events: all;
 }
 
 /* ── SETUP SCREEN ── */
@@ -995,10 +996,24 @@ let isLoading = false;
 
 function init() {
   const key = localStorage.getItem('imals_api_key');
+
+  // Setup screen starts visible, chat screen starts hidden
+  const setup = document.getElementById('setup-screen');
+  const chat = document.getElementById('chat-screen');
+
   if (key) {
-    showScreen('chat-screen');
+    // Skip setup, go straight to chat
+    setup.style.transform = 'translateX(100%)';
+    setup.style.pointerEvents = 'none';
+    chat.classList.add('active');
+    screenHistory = ['chat-screen'];
     document.getElementById('settings-api-key').value = key;
+  } else {
+    // Show setup
+    setup.classList.add('active');
+    screenHistory = ['setup-screen'];
   }
+
   const sp = localStorage.getItem('imals_system_prompt') || DEFAULT_SYSTEM_PROMPT;
   document.getElementById('settings-system-prompt').value = sp;
 
@@ -1152,7 +1167,12 @@ function saveKey() {
   const key = document.getElementById('api-key-input').value.trim();
   if (!key.startsWith('sk-ant')) { showToast('Neplatný API klíč'); return; }
   localStorage.setItem('imals_api_key', key);
-  showScreen('chat-screen');
+  const setup = document.getElementById('setup-screen');
+  const chat = document.getElementById('chat-screen');
+  setup.classList.remove('active');
+  setup.style.transform = 'translateX(100%)';
+  chat.classList.add('active');
+  screenHistory = ['chat-screen'];
 }
 
 function updateApiKey() {
@@ -1514,7 +1534,13 @@ function clearHistory() {
 function logout() {
   if (!confirm('Smazat API klíč a odhlásit se?')) return;
   localStorage.removeItem('imals_api_key');
-  showScreen('setup-screen');
+  const setup = document.getElementById('setup-screen');
+  const chat = document.getElementById('chat-screen');
+  chat.classList.remove('active');
+  setup.style.transform = '';
+  setup.style.pointerEvents = '';
+  setup.classList.add('active');
+  screenHistory = ['setup-screen'];
 }
 
 function showToast(msg) {
