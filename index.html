@@ -48,41 +48,37 @@ body {
 
 /* ── SCREENS ── */
 .screen {
-  display: flex;
+  display: none;
   flex-direction: column;
   height: 100dvh;
   position: fixed;
   inset: 0;
   background: var(--bg);
-  transform: translateX(100%);
-  transition: transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  will-change: transform;
-  pointer-events: none;
   z-index: 1;
 }
 .screen.active {
-  transform: translateX(0) !important;
-  pointer-events: all;
+  display: flex;
   z-index: 2;
+  animation: slideIn 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
-.screen.behind {
-  transform: translateX(-28%) !important;
-  pointer-events: none;
+.screen.slide-out {
+  display: flex;
   z-index: 1;
+  animation: slideOut 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes slideOut {
+  from { transform: translateX(0); }
+  to { transform: translateX(-28%); }
 }
 #chat-screen {
-  transform: translateX(0);
-  pointer-events: all;
   z-index: 1;
 }
 #setup-screen {
-  transform: translateX(0);
   z-index: 10;
-  pointer-events: all;
-  display: none;
-}
-#setup-screen.active {
-  display: flex;
 }
 
 /* ── SETUP SCREEN ── */
@@ -90,8 +86,6 @@ body {
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  background: var(--bg);
-  position: relative;
   overflow: hidden;
 }
 
@@ -1000,32 +994,19 @@ let isLoading = false;
 
 function init() {
   const key = localStorage.getItem('imals_api_key');
-
-  // Setup screen starts visible, chat screen starts hidden
-  const setup = document.getElementById('setup-screen');
-  const chat = document.getElementById('chat-screen');
-
   if (key) {
-    // Skip setup, go straight to chat
-    setup.style.transform = 'translateX(100%)';
-    setup.style.pointerEvents = 'none';
-    chat.classList.add('active');
-    screenHistory = ['chat-screen'];
+    document.getElementById('chat-screen').classList.add('active');
     document.getElementById('settings-api-key').value = key;
+    screenHistory = ['chat-screen'];
   } else {
-    // Show setup
-    setup.classList.add('active');
+    document.getElementById('setup-screen').classList.add('active');
     screenHistory = ['setup-screen'];
   }
-
   const sp = localStorage.getItem('imals_system_prompt') || DEFAULT_SYSTEM_PROMPT;
   document.getElementById('settings-system-prompt').value = sp;
-
   const savedModel = localStorage.getItem('imals_model') || 'claude-sonnet-4-5';
   document.getElementById('settings-model').value = savedModel;
-
   renderWelcome();
-
   const input = document.getElementById('msg-input');
   input.addEventListener('input', () => {
     document.getElementById('send-btn').disabled = input.value.trim() === '';
@@ -1071,16 +1052,12 @@ let screenHistory = ['chat-screen'];
 function showScreen(id) {
   const currentId = screenHistory[screenHistory.length - 1];
   if (currentId === id) return;
-
   const current = document.getElementById(currentId);
   const next = document.getElementById(id);
-
-  screenHistory.push(id);
-
-  current.classList.add('behind');
-  current.classList.remove('active');
+  current.classList.add('slide-out');
+  setTimeout(() => { current.classList.remove('active', 'slide-out'); }, 320);
   next.classList.add('active');
-
+  screenHistory.push(id);
   if (id === 'history-screen') renderHistory();
 }
 
@@ -1088,14 +1065,10 @@ function goBack() {
   if (screenHistory.length <= 1) return;
   const currentId = screenHistory.pop();
   const prevId = screenHistory[screenHistory.length - 1];
-
   const current = document.getElementById(currentId);
   const prev = document.getElementById(prevId);
-
-  prev.classList.add('active');
-  prev.classList.remove('behind');
   current.classList.remove('active');
-
+  prev.classList.add('active');
   haptic('light');
 }
 
@@ -1103,20 +1076,13 @@ function goHome() {
   if (messages.length > 0) saveCurrentChat();
   messages = [];
   currentChatId = null;
-
   const currentId = screenHistory[screenHistory.length - 1];
   if (currentId !== 'chat-screen') {
-    const current = document.getElementById(currentId);
-    const chat = document.getElementById('chat-screen');
-    current.classList.remove('active');
-    chat.classList.remove('behind');
-    chat.classList.add('active');
-    // clear all behind
-    document.querySelectorAll('.screen.behind').forEach(s => s.classList.remove('behind'));
+    document.getElementById(currentId).classList.remove('active');
+    document.getElementById('chat-screen').classList.add('active');
     screenHistory = ['chat-screen'];
     haptic('light');
   }
-
   renderWelcome();
 }
 
@@ -1171,11 +1137,8 @@ function saveKey() {
   const key = document.getElementById('api-key-input').value.trim();
   if (!key.startsWith('sk-ant')) { showToast('Neplatný API klíč'); return; }
   localStorage.setItem('imals_api_key', key);
-  const setup = document.getElementById('setup-screen');
-  const chat = document.getElementById('chat-screen');
-  setup.classList.remove('active');
-  setup.style.transform = 'translateX(100%)';
-  chat.classList.add('active');
+  document.getElementById('setup-screen').classList.remove('active');
+  document.getElementById('chat-screen').classList.add('active');
   screenHistory = ['chat-screen'];
 }
 
@@ -1538,12 +1501,9 @@ function clearHistory() {
 function logout() {
   if (!confirm('Smazat API klíč a odhlásit se?')) return;
   localStorage.removeItem('imals_api_key');
-  const setup = document.getElementById('setup-screen');
-  const chat = document.getElementById('chat-screen');
-  chat.classList.remove('active');
-  setup.style.transform = '';
-  setup.style.pointerEvents = '';
-  setup.classList.add('active');
+  document.getElementById('chat-screen').classList.remove('active');
+  document.getElementById('settings-screen').classList.remove('active');
+  document.getElementById('setup-screen').classList.add('active');
   screenHistory = ['setup-screen'];
 }
 
