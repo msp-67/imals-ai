@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="IMALS AI">
+<meta name="theme-color" content="#0a0a0f">
+<title>IMALS AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --bg2: #111118;
+  --bg3: #1a1a24;
+  --bg4: #22222f;
+  --border: rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.1);
+  --accent: #6c63ff;
+  --accent2: #4fc3f7;
+  --accent-glow: rgba(108,99,255,0.15);
+  --text: #f0f0f8;
+  --text2: #9090a8;
+  --text3: #555568;
+  --user-bubble: #1e1e30;
+  --ai-bubble: #13131e;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-size: 15px;
+}
+
+/* ── SCREENS ── */
+.screen { display: none; flex-direction: column; height: 100dvh; }
+.screen.active { display: flex; }
+
+/* ── SETUP SCREEN ── */
+#setup-screen {
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+}
+
+#setup-screen::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  left: -20%;
+  width: 80%;
+  height: 80%;
+  background: radial-gradient(ellipse, rgba(108,99,255,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+#setup-screen::after {
+  content: '';
+  position: absolute;
+  bottom: -20%;
+  right: -10%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(ellipse, rgba(79,195,247,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.setup-inner {
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  z-index: 1;
+}
+
+.logo-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 3rem;
+}
+
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  color: white;
+  letter-spacing: -0.5px;
+}
+
+.logo-text {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+
+.logo-text span { color: var(--accent); }
+
+.setup-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.5px;
+}
+
+.setup-sub {
+  color: var(--text2);
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 2.5rem;
+  font-weight: 300;
+}
+
+.field-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.api-input-wrap {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.api-input {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 14px 50px 14px 16px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  letter-spacing: 0.02em;
+}
+
+.api-input:focus { border-color: var(--accent); }
+.api-input::placeholder { color: var(--text3); }
+
+.toggle-vis {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text3);
+  font-size: 16px;
+  padding: 4px;
+}
+
+.api-hint {
+  font-size: 12px;
+  color: var(--text3);
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+.api-hint a { color: var(--accent); text-decoration: none; }
+
+.btn-primary {
+  width: 100%;
+  padding: 15px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: white;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+
+/* ── CHAT SCREEN ── */
+#chat-screen { background: var(--bg); }
+
+/* Header */
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+  padding-top: max(14px, env(safe-area-inset-top));
+}
+
+.header-left { display: flex; align-items: center; gap: 10px; }
+
+.header-logo {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 12px;
+  color: white;
+}
+
+.header-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+
+.header-title span { color: var(--accent); }
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4caf50;
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.header-right { display: flex; gap: 8px; }
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.icon-btn:active { background: var(--bg3); color: var(--text); }
+
+/* Tabs */
+.mode-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+
+.mode-tabs::-webkit-scrollbar { display: none; }
+
+.mode-tab {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text2);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.mode-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+/* Messages */
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg4) transparent;
+}
+
+.messages::-webkit-scrollbar { width: 3px; }
+.messages::-webkit-scrollbar-track { background: transparent; }
+.messages::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
+
+/* Welcome state */
+.welcome-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 2rem;
+  text-align: center;
+}
+
+.welcome-icon {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  color: white;
+  margin-bottom: 1.25rem;
+}
+
+.welcome-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.welcome-sub {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.6;
+  max-width: 280px;
+  font-weight: 300;
+}
+
+.quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  max-width: 360px;
+  margin-top: 1.5rem;
+}
+
+.quick-action {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.quick-action:active { background: var(--bg4); border-color: var(--border2); }
+
+.qa-icon { font-size: 18px; margin-bottom: 6px; display: block; }
+.qa-label { font-size: 12px; font-weight: 500; color: var(--text); display: block; }
+.qa-desc { font-size: 11px; color: var(--text3); margin-top: 2px; display: block; font-weight: 300; }
+
+/* Message bubbles */
+.msg {
+  display: flex;
+  flex-direction: column;
+  max-width: 88%;
+  animation: msg-in 0.2s ease;
+}
+
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.msg.user { align-self: flex-end; align-items: flex-end; }
+.msg.ai { align-self: flex-start; align-items: flex-start; }
+
+.bubble {
+  padding: 12px 15px;
+  border-radius: var(--radius);
+  line-height: 1.65;
+  font-size: 14.5px;
+  font-weight: 300;
+}
+
+.msg.user .bubble {
+  background: var(--user-bubble);
+  border: 1px solid rgba(108,99,255,0.2);
+  border-bottom-right-radius: 4px;
+  color: var(--text);
+}
+
+.msg.ai .bubble {
+  background: var(--ai-bubble);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+  color: var(--text);
+}
+
+.msg-time {
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 4px;
+  padding: 0 4px;
+}
+
+/* Typing indicator */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 16px;
+  background: var(--ai-bubble);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  border-bottom-left-radius: 4px;
+  align-self: flex-start;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text3);
+  animation: typing 1.2s infinite;
+}
+
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-5px); opacity: 1; }
+}
+
+/* Input area */
+.input-area {
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  padding: 12px 16px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  flex-shrink: 0;
+}
+
+.input-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.msg-input {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 300;
+  outline: none;
+  resize: none;
+  max-height: 120px;
+  min-height: 44px;
+  line-height: 1.5;
+  transition: border-color 0.2s;
+  scrollbar-width: none;
+}
+
+.msg-input::-webkit-scrollbar { display: none; }
+.msg-input:focus { border-color: rgba(108,99,255,0.5); }
+.msg-input::placeholder { color: var(--text3); }
+
+.send-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--accent);
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.send-btn:disabled { opacity: 0.3; }
+.send-btn:not(:disabled):active { transform: scale(0.93); }
+
+.send-icon {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: white;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── HISTORY SCREEN ── */
+#history-screen { background: var(--bg); }
+
+.screen-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  padding-top: max(14px, env(safe-area-inset-top));
+  flex-shrink: 0;
+}
+
+.back-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.screen-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+}
+
+.history-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text3);
+  gap: 8px;
+  font-size: 14px;
+}
+
+.history-item {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.history-item:active { border-color: var(--accent); }
+
+.history-item-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-item-meta {
+  font-size: 11px;
+  color: var(--text3);
+  display: flex;
+  gap: 8px;
+}
+
+.history-item-preview {
+  font-size: 12px;
+  color: var(--text2);
+  margin-top: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 300;
+}
+
+/* ── SETTINGS SCREEN ── */
+#settings-screen { background: var(--bg); }
+
+.settings-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  text-transform: uppercase;
+  padding: 8px 0 4px;
+}
+
+.settings-item {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-item-info { flex: 1; }
+.settings-item-label { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+.settings-item-sub { font-size: 12px; color: var(--text2); font-weight: 300; }
+
+.settings-item input[type="text"],
+.settings-item textarea {
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  width: 100%;
+  margin-top: 8px;
+  outline: none;
+  resize: vertical;
+}
+
+.settings-item textarea { min-height: 120px; line-height: 1.5; }
+
+.settings-item-full { flex-direction: column; align-items: stretch; }
+
+.btn-danger {
+  background: rgba(229,62,62,0.12);
+  border: 1px solid rgba(229,62,62,0.25);
+  color: #fc8181;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.btn-danger:active { background: rgba(229,62,62,0.25); }
+
+.btn-save {
+  background: var(--accent);
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 600;
+  margin-top: 8px;
+  transition: opacity 0.15s;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 8px 18px;
+  font-size: 13px;
+  color: var(--text);
+  opacity: 0;
+  transition: all 0.25s;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 100;
+}
+
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen" class="screen active">
+  <div class="setup-inner">
+    <div class="logo-mark">
+      <div class="logo-icon">IM</div>
+      <div class="logo-text">IMALS <span>AI</span></div>
+    </div>
+    <h1 class="setup-title">Tvůj osobní<br>AI asistent.</h1>
+    <p class="setup-sub">Pro Imals Media, osobní projekty a všechno mezi tím. Zadej svůj Claude API klíč pro začátek.</p>
+    <p class="field-label">Claude API klíč</p>
+    <div class="api-input-wrap">
+      <input type="password" class="api-input" id="api-key-input" placeholder="sk-ant-api03-..." autocomplete="off">
+      <button class="toggle-vis" onclick="toggleVis()" id="vis-btn">👁</button>
+    </div>
+    <p class="api-hint">Klíč se uloží jen lokálně v tvém prohlížeči. Získáš ho na <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></p>
+    <button class="btn-primary" onclick="saveKey()">Spustit IMALS AI →</button>
+  </div>
+</div>
+
+<!-- CHAT SCREEN -->
+<div id="chat-screen" class="screen">
+  <div class="chat-header">
+    <div class="header-left">
+      <div class="header-logo">IM</div>
+      <div>
+        <div class="header-title">IMALS <span>AI</span></div>
+        <div class="header-status"><div class="status-dot"></div>Online</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" onclick="showScreen('history-screen')" title="Historie">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </button>
+      <button class="icon-btn" onclick="newChat()" title="Nový chat">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <button class="icon-btn" onclick="showScreen('settings-screen')" title="Nastavení">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="mode-tabs" id="mode-tabs">
+    <button class="mode-tab active" data-mode="personal" onclick="setMode(this)">🧠 Osobní</button>
+    <button class="mode-tab" data-mode="imals" onclick="setMode(this)">📈 Imals</button>
+    <button class="mode-tab" data-mode="brainstorm" onclick="setMode(this)">💡 Brainstorm</button>
+    <button class="mode-tab" data-mode="coach" onclick="setMode(this)">🎯 Coach</button>
+    <button class="mode-tab" data-mode="write" onclick="setMode(this)">✍️ Psaní</button>
+  </div>
+
+  <div class="messages" id="messages">
+    <div class="welcome-state" id="welcome-state">
+      <div class="welcome-icon">IM</div>
+      <div class="welcome-title">Čau, Matěji.</div>
+      <p class="welcome-sub">Vyber režim nahoře nebo rovnou piš. Jsem tady pro Imals i pro tebe osobně.</p>
+      <div class="quick-actions">
+        <button class="quick-action" onclick="quickSend('Potřebuju pomoct s Imals strategií na po maturitě.')">
+          <span class="qa-icon">📈</span>
+          <span class="qa-label">Imals strategie</span>
+          <span class="qa-desc">Post-maturita plán</span>
+        </button>
+        <button class="quick-action" onclick="quickSend('Pomoz mi s osobním rozvojem a cíli na příštích 3 měsíce.')">
+          <span class="qa-icon">🎯</span>
+          <span class="qa-label">Osobní cíle</span>
+          <span class="qa-desc">Plánování a growth</span>
+        </button>
+        <button class="quick-action" onclick="quickSend('Chci brainstormovat nový nápad.')">
+          <span class="qa-icon">💡</span>
+          <span class="qa-label">Brainstorm</span>
+          <span class="qa-desc">Nápady a projekty</span>
+        </button>
+        <button class="quick-action" onclick="quickSend('Potřebuju napsat profesionální email pro klienta Imals.')">
+          <span class="qa-icon">✉️</span>
+          <span class="qa-label">Email klientovi</span>
+          <span class="qa-desc">Imals komunikace</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-row">
+      <textarea class="msg-input" id="msg-input" placeholder="Napiš zprávu..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" id="send-btn" onclick="sendMessage()" disabled>
+        <svg class="send-icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY SCREEN -->
+<div id="history-screen" class="screen">
+  <div class="screen-header">
+    <button class="back-btn" onclick="showScreen('chat-screen')">←</button>
+    <div class="screen-title">Historie chatů</div>
+  </div>
+  <div class="history-list" id="history-list"></div>
+</div>
+
+<!-- SETTINGS SCREEN -->
+<div id="settings-screen" class="screen">
+  <div class="screen-header">
+    <button class="back-btn" onclick="showScreen('chat-screen')">←</button>
+    <div class="screen-title">Nastavení</div>
+  </div>
+  <div class="settings-list">
+    <div class="settings-section-title">API</div>
+    <div class="settings-item settings-item-full">
+      <div class="settings-item-label">Claude API klíč</div>
+      <div class="settings-item-sub">Uložen lokálně v prohlížeči</div>
+      <input type="password" id="settings-api-key" placeholder="sk-ant-api03-...">
+      <button class="btn-save" onclick="updateApiKey()">Uložit klíč</button>
+    </div>
+
+    <div class="settings-section-title">Asistent</div>
+    <div class="settings-item settings-item-full">
+      <div class="settings-item-label">Systémový prompt</div>
+      <div class="settings-item-sub">Jak se má asistent chovat</div>
+      <textarea id="settings-system-prompt"></textarea>
+      <button class="btn-save" onclick="saveSystemPrompt()">Uložit prompt</button>
+    </div>
+
+    <div class="settings-section-title">Data</div>
+    <div class="settings-item">
+      <div class="settings-item-info">
+        <div class="settings-item-label">Vymazat historii chatů</div>
+        <div class="settings-item-sub">Smaže všechny uložené konverzace</div>
+      </div>
+      <button class="btn-danger" onclick="clearHistory()">Smazat</button>
+    </div>
+    <div class="settings-item">
+      <div class="settings-item-info">
+        <div class="settings-item-label">Odhlásit se</div>
+        <div class="settings-item-sub">Smaže API klíč z prohlížeče</div>
+      </div>
+      <button class="btn-danger" onclick="logout()">Odhlásit</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DEFAULT_SYSTEM_PROMPT = `Jsi IMALS AI — osobní asistent Matěje Spáčila (19 let, Praha).
+
+Matěj je spoluzakladatel digitální marketingové agentury Imals Media (s Patrikem, 50/50). Agentura se zaměřuje na performance marketing pro nemovitosti a reality. Maturuje v červnu 2026 na Gymnáziu Na Zatlance (alternativní program). Po maturitě nastupuje na Tiimiaakatemia ČZU. Bydlí v Černošicích.
+
+Zájmy: podnikání, sport (běh, kolo, windsurfing, lyžování, wing foiling), video produkce, drony, adrenalin, AI nástroje.
+
+Jak komunikuješ:
+- Česky, neformálně a přímo
+- Konkrétně a akčně — žádná zbytečná teorie
+- Jako inteligentní parťák, ne jako korporátní asistent
+- Krátkými odpověďmi pokud stačí, delšími když je potřeba
+- Buď upřímný i když to není příjemné
+
+Aktuální priority (duben–červen 2026):
+1. Maturita (němčina sloh 15.4., čeština sloh 16.4., pak ústní v květnu)
+2. Příprava Imals na plný restart po maturitě (konec května)
+3. Osobní rozvoj a plánování`;
+
+const MODES = {
+  personal: { label: 'Osobní', extra: 'Bavíme se o osobním rozvoji, životním směřování, projektech mimo Imals.' },
+  imals: { label: 'Imals', extra: 'Fokus na agenturu Imals Media — strategie, klienti, obsah, akvizice.' },
+  brainstorm: { label: 'Brainstorm', extra: 'Generuj nápady, rozvíjej koncepty, zpochybňuj předpoklady. Buď kreativní a odvážný.' },
+  coach: { label: 'Coach', extra: 'Buď přímý coach. Ptej se, provokuj, drž Matěje zodpovědného za jeho cíle.' },
+  write: { label: 'Psaní', extra: 'Pomáhej psát texty — emaily, posty, nabídky, zprávy. Buď efektivní.' }
+};
+
+let currentMode = 'personal';
+let messages = [];
+let allChats = JSON.parse(localStorage.getItem('imals_chats') || '[]');
+let currentChatId = null;
+let isLoading = false;
+
+function init() {
+  const key = localStorage.getItem('imals_api_key');
+  if (key) {
+    showScreen('chat-screen');
+    document.getElementById('settings-api-key').value = key;
+  }
+  const sp = localStorage.getItem('imals_system_prompt') || DEFAULT_SYSTEM_PROMPT;
+  document.getElementById('settings-system-prompt').value = sp;
+
+  const input = document.getElementById('msg-input');
+  input.addEventListener('input', () => {
+    document.getElementById('send-btn').disabled = input.value.trim() === '';
+  });
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'history-screen') renderHistory();
+}
+
+function toggleVis() {
+  const inp = document.getElementById('api-key-input');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function saveKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key.startsWith('sk-ant')) { showToast('Neplatný API klíč'); return; }
+  localStorage.setItem('imals_api_key', key);
+  showScreen('chat-screen');
+}
+
+function updateApiKey() {
+  const key = document.getElementById('settings-api-key').value.trim();
+  if (!key.startsWith('sk-ant')) { showToast('Neplatný API klíč'); return; }
+  localStorage.setItem('imals_api_key', key);
+  showToast('Klíč uložen ✓');
+}
+
+function saveSystemPrompt() {
+  const sp = document.getElementById('settings-system-prompt').value.trim();
+  localStorage.setItem('imals_system_prompt', sp);
+  showToast('Prompt uložen ✓');
+}
+
+function setMode(btn) {
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  currentMode = btn.dataset.mode;
+}
+
+function newChat() {
+  if (messages.length > 0) saveCurrentChat();
+  messages = [];
+  currentChatId = null;
+  const container = document.getElementById('messages');
+  container.innerHTML = `
+    <div class="welcome-state" id="welcome-state">
+      <div class="welcome-icon">IM</div>
+      <div class="welcome-title">Čau, Matěji.</div>
+      <p class="welcome-sub">Vyber režim nahoře nebo rovnou piš. Jsem tady pro Imals i pro tebe osobně.</p>
+      <div class="quick-actions">
+        <button class="quick-action" onclick="quickSend('Potřebuju pomoct s Imals strategií na po maturitě.')">
+          <span class="qa-icon">📈</span><span class="qa-label">Imals strategie</span><span class="qa-desc">Post-maturita plán</span>
+        </button>
+        <button class="quick-action" onclick="quickSend('Pomoz mi s osobním rozvojem a cíli na příštích 3 měsíce.')">
+          <span class="qa-icon">🎯</span><span class="qa-label">Osobní cíle</span><span class="qa-desc">Plánování a growth</span>
+        </button>
+        <button class="quick-action" onclick="quickSend('Chci brainstormovat nový nápad.')">
+          <span class="qa-icon">💡</span><span class="qa-label">Brainstorm</span><span class="qa-desc">Nápady a projekty</span>
+        </button>
+        <button class="quick-action" onclick="quickSend('Potřebuju napsat profesionální email pro klienta Imals.')">
+          <span class="qa-icon">✉️</span><span class="qa-label">Email klientovi</span><span class="qa-desc">Imals komunikace</span>
+        </button>
+      </div>
+    </div>`;
+}
+
+function quickSend(text) {
+  document.getElementById('msg-input').value = text;
+  sendMessage();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function getTime() {
+  return new Date().toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
+}
+
+function addMsg(role, text) {
+  const welcome = document.getElementById('welcome-state');
+  if (welcome) welcome.remove();
+
+  const container = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `<div class="bubble">${text.replace(/\n/g, '<br>')}</div><div class="msg-time">${getTime()}</div>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  return div;
+}
+
+function addTyping() {
+  const welcome = document.getElementById('welcome-state');
+  if (welcome) welcome.remove();
+  const container = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'typing-indicator';
+  div.id = 'typing';
+  div.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
+
+async function sendMessage() {
+  if (isLoading) return;
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const key = localStorage.getItem('imals_api_key');
+  if (!key) { showToast('Nejdřív nastav API klíč v nastavení'); return; }
+
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('send-btn').disabled = true;
+  isLoading = true;
+
+  messages.push({ role: 'user', content: text });
+  addMsg('user', text);
+  addTyping();
+
+  const sp = localStorage.getItem('imals_system_prompt') || DEFAULT_SYSTEM_PROMPT;
+  const modeExtra = MODES[currentMode]?.extra || '';
+  const fullPrompt = sp + (modeExtra ? `\n\nAktuální režim: ${MODES[currentMode].label}. ${modeExtra}` : '');
+
+  try {
+    const res = await fetch('https://wispy-bird-f64d.matynospacil.workers.dev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-opus-4-5',
+        max_tokens: 1024,
+        system: fullPrompt,
+        messages: messages
+      })
+    });
+
+    const data = await res.json();
+    removeTyping();
+
+    if (data.error) { showToast('Chyba: ' + data.error.message); isLoading = false; return; }
+
+    const reply = data.content[0].text;
+    messages.push({ role: 'assistant', content: reply });
+    addMsg('ai', reply);
+    saveCurrentChat();
+  } catch (e) {
+    removeTyping();
+    showToast('Chyba připojení');
+  }
+
+  isLoading = false;
+}
+
+function saveCurrentChat() {
+  if (messages.length === 0) return;
+  const title = messages[0].content.slice(0, 50) + (messages[0].content.length > 50 ? '…' : '');
+  const preview = messages[messages.length - 1].content.slice(0, 80);
+  const chat = { id: currentChatId || Date.now().toString(), title, preview, messages: [...messages], date: new Date().toISOString(), mode: currentMode };
+  currentChatId = chat.id;
+  const idx = allChats.findIndex(c => c.id === chat.id);
+  if (idx >= 0) allChats[idx] = chat;
+  else allChats.unshift(chat);
+  localStorage.setItem('imals_chats', JSON.stringify(allChats.slice(0, 50)));
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  allChats = JSON.parse(localStorage.getItem('imals_chats') || '[]');
+  if (allChats.length === 0) {
+    list.innerHTML = '<div class="history-empty"><span style="font-size:32px">💬</span><span>Žádné uložené chaty</span></div>';
+    return;
+  }
+  list.innerHTML = allChats.map(c => `
+    <div class="history-item" onclick="loadChat('${c.id}')">
+      <div class="history-item-title">${c.title}</div>
+      <div class="history-item-meta">
+        <span>${new Date(c.date).toLocaleDateString('cs-CZ')}</span>
+        <span>${c.messages.length} zpráv</span>
+        <span>${MODES[c.mode]?.label || c.mode}</span>
+      </div>
+      <div class="history-item-preview">${c.preview}</div>
+    </div>`).join('');
+}
+
+function loadChat(id) {
+  const chat = allChats.find(c => c.id === id);
+  if (!chat) return;
+  messages = [...chat.messages];
+  currentChatId = chat.id;
+  showScreen('chat-screen');
+  const container = document.getElementById('messages');
+  container.innerHTML = '';
+  messages.forEach(m => addMsg(m.role === 'user' ? 'user' : 'ai', m.content));
+  const modeBtn = document.querySelector(`[data-mode="${chat.mode}"]`);
+  if (modeBtn) setMode(modeBtn);
+}
+
+function clearHistory() {
+  if (!confirm('Opravdu smazat celou historii?')) return;
+  allChats = [];
+  localStorage.removeItem('imals_chats');
+  showToast('Historie smazána');
+  renderHistory();
+}
+
+function logout() {
+  if (!confirm('Smazat API klíč a odhlásit se?')) return;
+  localStorage.removeItem('imals_api_key');
+  showScreen('setup-screen');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+init();
+</script>
+</body>
+</html>
