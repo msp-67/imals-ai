@@ -53,22 +53,31 @@ body {
   height: 100dvh;
   position: fixed;
   inset: 0;
-  transform: translateX(100%);
-  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  will-change: transform;
   background: var(--bg);
+  transform: translateX(100%);
+  transition: transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
   pointer-events: none;
+  z-index: 1;
 }
 .screen.active {
-  transform: translateX(0);
+  transform: translateX(0) !important;
   pointer-events: all;
+  z-index: 2;
+}
+.screen.behind {
+  transform: translateX(-28%) !important;
+  pointer-events: none;
+  z-index: 1;
 }
 #chat-screen {
   transform: translateX(0);
   pointer-events: all;
+  z-index: 1;
 }
 #setup-screen {
   transform: translateX(0);
+  z-index: 10;
 }
 
 /* ── SETUP SCREEN ── */
@@ -1031,50 +1040,59 @@ function init() {
     }
   }, { passive: true });
 
-  // Global swipe back (from left edge) with interactive drag
+  // Global swipe back (from left edge)
   let globalTouchStartX = 0;
-  let isDraggingBack = false;
+  let swipingBack = false;
 
   document.addEventListener('touchstart', e => {
     globalTouchStartX = e.touches[0].clientX;
-    isDraggingBack = false;
+    swipingBack = false;
   }, { passive: true });
 
   document.addEventListener('touchmove', e => {
-    const activeScreen = document.querySelector('.screen.active');
-    if (!activeScreen || activeScreen.id === 'chat-screen' || activeScreen.id === 'setup-screen') return;
+    if (screenHistory.length <= 1) return;
+    const currentId = screenHistory[screenHistory.length - 1];
+    if (currentId === 'chat-screen' || currentId === 'setup-screen') return;
     const dx = e.touches[0].clientX - globalTouchStartX;
-    if (globalTouchStartX < 40 && dx > 0) {
-      isDraggingBack = true;
-      const prev = document.getElementById(screenHistory[screenHistory.length - 2] || 'chat-screen');
+    if (globalTouchStartX < 30 && dx > 10) {
+      swipingBack = true;
+      const current = document.getElementById(currentId);
+      const prevId = screenHistory[screenHistory.length - 2];
+      const prev = document.getElementById(prevId);
       const progress = Math.min(dx / window.innerWidth, 1);
-      activeScreen.style.transform = `translateX(${dx}px)`;
-      activeScreen.style.transition = 'none';
-      prev.classList.add('active');
-      prev.style.transform = `translateX(${-30 + progress * 30}%)`;
+      current.style.transition = 'none';
+      current.style.transform = `translateX(${dx}px)`;
       prev.style.transition = 'none';
+      prev.style.transform = `translateX(${-28 + progress * 28}%)`;
+      prev.classList.add('active');
     }
   }, { passive: true });
 
   document.addEventListener('touchend', e => {
-    if (!isDraggingBack) return;
-    isDraggingBack = false;
-    const activeScreen = document.querySelector('.screen.active');
+    if (!swipingBack) return;
+    swipingBack = false;
+    const currentId = screenHistory[screenHistory.length - 1];
+    const current = document.getElementById(currentId);
+    const prevId = screenHistory[screenHistory.length - 2];
+    const prev = document.getElementById(prevId);
     const dx = e.changedTouches[0].clientX - globalTouchStartX;
-    if (dx > window.innerWidth * 0.4) {
-      goBack();
+
+    current.style.transition = '';
+    prev.style.transition = '';
+
+    if (dx > window.innerWidth * 0.35) {
+      current.style.transform = 'translateX(100%)';
+      prev.style.transform = '';
+      prev.classList.add('active');
+      prev.classList.remove('behind');
+      setTimeout(() => { current.classList.remove('active'); current.style.transform = ''; }, 320);
+      screenHistory.pop();
+      haptic('light');
     } else {
-      // Snap back
-      const screens = document.querySelectorAll('.screen.active');
-      screens.forEach(s => {
-        s.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-        if (s === activeScreen) {
-          s.style.transform = 'translateX(0)';
-        } else {
-          s.style.transform = 'translateX(-30%)';
-          setTimeout(() => { s.classList.remove('active'); s.style.transform = ''; }, 300);
-        }
-      });
+      current.style.transform = '';
+      prev.style.transform = 'translateX(-28%)';
+      prev.classList.remove('active');
+      prev.classList.add('behind');
     }
   }, { passive: true });
 }
@@ -1089,47 +1107,32 @@ function haptic(style) {
 let screenHistory = ['chat-screen'];
 
 function showScreen(id) {
-  const current = document.querySelector('.screen.active');
-  if (!current || current.id === id) return;
+  const currentId = screenHistory[screenHistory.length - 1];
+  if (currentId === id) return;
+
+  const current = document.getElementById(currentId);
   const next = document.getElementById(id);
+
   screenHistory.push(id);
 
-  // Push current left, slide next in from right
-  current.style.transform = 'translateX(-30%)';
+  current.classList.add('behind');
   current.classList.remove('active');
   next.classList.add('active');
-  next.style.transform = 'translateX(100%)';
 
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      next.style.transform = '';
-      if (id === 'history-screen') renderHistory();
-    });
-  });
+  if (id === 'history-screen') renderHistory();
 }
 
 function goBack() {
   if (screenHistory.length <= 1) return;
-  screenHistory.pop();
+  const currentId = screenHistory.pop();
   const prevId = screenHistory[screenHistory.length - 1];
-  const current = document.querySelector('.screen.active');
+
+  const current = document.getElementById(currentId);
   const prev = document.getElementById(prevId);
 
   prev.classList.add('active');
-  prev.style.transition = 'none';
-  prev.style.transform = 'translateX(-30%)';
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      prev.style.transition = '';
-      prev.style.transform = '';
-      current.style.transform = 'translateX(100%)';
-      setTimeout(() => {
-        current.classList.remove('active');
-        current.style.transform = '';
-      }, 350);
-    });
-  });
+  prev.classList.remove('behind');
+  current.classList.remove('active');
 
   haptic('light');
 }
@@ -1138,33 +1141,21 @@ function goHome() {
   if (messages.length > 0) saveCurrentChat();
   messages = [];
   currentChatId = null;
-  const current = document.querySelector('.screen.active');
-  const chat = document.getElementById('chat-screen');
 
-  if (current.id === 'chat-screen') {
-    renderWelcome();
-    return;
+  const currentId = screenHistory[screenHistory.length - 1];
+  if (currentId !== 'chat-screen') {
+    const current = document.getElementById(currentId);
+    const chat = document.getElementById('chat-screen');
+    current.classList.remove('active');
+    chat.classList.remove('behind');
+    chat.classList.add('active');
+    // clear all behind
+    document.querySelectorAll('.screen.behind').forEach(s => s.classList.remove('behind'));
+    screenHistory = ['chat-screen'];
+    haptic('light');
   }
 
-  screenHistory = ['chat-screen'];
-  chat.classList.add('active');
-  chat.style.transition = 'none';
-  chat.style.transform = 'translateX(-30%)';
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      chat.style.transition = '';
-      chat.style.transform = '';
-      current.style.transform = 'translateX(100%)';
-      setTimeout(() => {
-        current.classList.remove('active');
-        current.style.transform = '';
-        renderWelcome();
-      }, 350);
-    });
-  });
-
-  haptic('light');
+  renderWelcome();
 }
 
 function renderWelcome() {
