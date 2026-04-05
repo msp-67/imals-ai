@@ -869,11 +869,14 @@ body {
   </div>
 
   <div class="input-area">
+    <div style="position:relative;">
+      <div id="slash-popup" style="display:none;position:absolute;bottom:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--border2);border-radius:12px;margin-bottom:6px;overflow:hidden;z-index:40;"></div>
+    </div>
     <div class="input-row">
       <button class="mic-btn" id="mic-btn" onclick="toggleVoice()" title="Hlas">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
       </button>
-      <textarea class="msg-input" id="msg-input" placeholder="Napiš nebo mluv..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <textarea class="msg-input" id="msg-input" placeholder="Napiš, mluv nebo / pro příkazy..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this);handleSlash(this.value)"></textarea>
       <button class="mic-btn" onclick="toggleTemplates()" title="Šablony" style="color:var(--accent)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       </button>
@@ -1128,6 +1131,68 @@ function useTemplate(prompt) {
   document.getElementById('msg-input').focus();
 }
 
+// ── SLASH COMMANDS ──
+const SLASH_COMMANDS = [
+  { cmd: '/report',     icon: '📊', desc: 'Měsíční report pro klienta',         action: 'template', value: 'Pomoz mi sestavit měsíční report výsledků pro klienta. Struktura: shrnutí, výsledky kampaní, co jsme se naučili, plán na příští měsíc.' },
+  { cmd: '/nabidka',    icon: '📋', desc: 'Nabídka služeb pro klienta',          action: 'template', value: 'Napiš profesionální nabídku performance marketingových služeb pro klienta v realitách. Zahrň: co děláme, výsledky které přinášíme, cenový rámec.' },
+  { cmd: '/email',      icon: '✉️',  desc: 'Profesionální email',                action: 'template', value: 'Napiš profesionální email pro klienta. Tón: přátelský a konkrétní. Téma: ' },
+  { cmd: '/followup',   icon: '🔁',  desc: 'Followup email klientovi',           action: 'template', value: 'Napiš followup email klientovi který nereagoval na naši nabídku. Tón: přátelský, nenásilný, s konkrétní výzvou k akci.' },
+  { cmd: '/post',       icon: '📱',  desc: 'Instagram post pro klienta',         action: 'template', value: 'Napiš Instagram post pro realitního makléře. Cíl: budování důvěry a generování leadů. Tón: profesionální ale lidský.' },
+  { cmd: '/cold',       icon: '🎯',  desc: 'Cold outreach zpráva',               action: 'template', value: 'Napiš cold email pro oslovení potenciálního klienta v realitách. Krátký, konkrétní, s jasnou hodnotovou propozicí Imals.' },
+  { cmd: '/shrn',       icon: '📝',  desc: 'Shrň aktuální chat',                 action: 'template', value: 'Shrň celý náš dosavadní rozhovor do stručných bullet pointů. Vyzdvihni klíčová rozhodnutí a akční kroky.' },
+  { cmd: '/tyden',      icon: '📅',  desc: 'Týdenní review',                     action: 'template', value: 'Pomoz mi udělat týdenní review. Ptej se mě strukturovaně: co jsem splnil, co ne a proč, co je priorita na příští týden.' },
+  { cmd: '/cile',       icon: '🏆',  desc: 'Cíle na měsíc',                      action: 'template', value: 'Pomoz mi nastavit cíle na příští měsíc — pro Imals, osobní rozvoj a zdraví. Ptej se mě a pomoz je formulovat SMART.' },
+  { cmd: '/imals',      icon: '📈',  desc: 'Přepni na Imals režim',              action: 'mode',     value: 'imals' },
+  { cmd: '/osobni',     icon: '🧠',  desc: 'Přepni na Osobní režim',             action: 'mode',     value: 'personal' },
+  { cmd: '/brainstorm', icon: '💡',  desc: 'Přepni na Brainstorm režim',         action: 'mode',     value: 'brainstorm' },
+  { cmd: '/coach',      icon: '🎯',  desc: 'Přepni na Coach režim',              action: 'mode',     value: 'coach' },
+  { cmd: '/new',        icon: '✨',  desc: 'Nový chat',                          action: 'fn',       value: 'newChat' },
+  { cmd: '/export',     icon: '⬇',  desc: 'Zkopírovat chat do schránky',        action: 'fn',       value: 'exportCurrentChat' },
+  { cmd: '/sablony',    icon: '🗂',  desc: 'Otevřít panel šablon',              action: 'fn',       value: 'toggleTemplates' },
+  { cmd: '/finance',    icon: '📊',  desc: 'Analýza trhů s live daty',          action: 'template', value: '/finance Dej mi dnešní přehled trhů — akcie (NVDA, AAPL, TSLA) a crypto (BTC, ETH, SOL). Pro každý: aktuální cena, změna dnes, krátký komentář. Na konci celkové sentiment trhu.' },
+  { cmd: '/web',        icon: '🌐',  desc: 'Vyhledej na internetu',             action: 'template', value: '/web ' },
+];
+
+function handleSlash(val) {
+  const popup = document.getElementById('slash-popup');
+  if (!val.startsWith('/')) { popup.style.display = 'none'; return; }
+  const query = val.toLowerCase();
+  const matches = SLASH_COMMANDS.filter(c => c.cmd.startsWith(query));
+  if (matches.length === 0) { popup.style.display = 'none'; return; }
+  popup.style.display = 'block';
+  popup.innerHTML = matches.map((c, i) => `
+    <div onclick="executeSlash('${c.cmd}')" style="display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'">
+      <span style="font-size:16px;width:20px;text-align:center;">${c.icon}</span>
+      <div>
+        <span style="font-size:13px;font-weight:500;color:var(--accent);font-family:var(--font-mono);">${c.cmd}</span>
+        <span style="font-size:12px;color:var(--text2);margin-left:8px;">${c.desc}</span>
+      </div>
+    </div>`).join('');
+}
+
+function executeSlash(cmd) {
+  const c = SLASH_COMMANDS.find(x => x.cmd === cmd);
+  if (!c) return;
+  document.getElementById('slash-popup').style.display = 'none';
+  const input = document.getElementById('msg-input');
+  if (c.action === 'template') {
+    input.value = c.value;
+    autoResize(input);
+    document.getElementById('send-btn').disabled = false;
+    input.focus();
+  } else if (c.action === 'mode') {
+    const btn = document.querySelector(`[data-mode="${c.value}"]`);
+    if (btn) { setMode(btn); showToast(MODES[c.value].label); }
+    input.value = '';
+    document.getElementById('send-btn').disabled = true;
+  } else if (c.action === 'fn') {
+    input.value = '';
+    document.getElementById('send-btn').disabled = true;
+    window[c.value]();
+  }
+  haptic('light');
+}
+
 function setMode(btn) {
   document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
@@ -1235,16 +1300,27 @@ async function sendMessage() {
   const modeExtra = MODES[currentMode]?.extra || '';
   const fullPrompt = sp + (modeExtra ? `\n\nAktuální režim: ${MODES[currentMode].label}. ${modeExtra}` : '');
 
+  // Detect if web search should be enabled
+  const webSearchTriggers = ['/finance', '/web'];
+  const useWebSearch = webSearchTriggers.some(t => text.toLowerCase().startsWith(t));
+
+  const body = {
+    model: localStorage.getItem('imals_model') || 'claude-sonnet-4-5',
+    max_tokens: 2048,
+    system: fullPrompt,
+    messages: messages
+  };
+
+  if (useWebSearch) {
+    body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
+    if (useWebSearch) showToast('🌐 Hledám online...');
+  }
+
   try {
     const res = await fetch('https://wispy-bird-f64d.matynospacil.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: localStorage.getItem('imals_model') || 'claude-sonnet-4-5',
-        max_tokens: 1024,
-        system: fullPrompt,
-        messages: messages
-      })
+      body: JSON.stringify(body)
     });
 
     const data = await res.json();
@@ -1252,7 +1328,12 @@ async function sendMessage() {
 
     if (data.error) { showToast('Chyba: ' + data.error.message); isLoading = false; return; }
 
-    const reply = data.content[0].text;
+    // Extract text from response — works with and without tool use
+    const reply = data.content
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('\n') || 'Nepodařilo se získat odpověď.';
+
     messages.push({ role: 'assistant', content: reply });
     addMsg('ai', reply);
     haptic('medium');
