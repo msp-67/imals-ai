@@ -839,33 +839,6 @@ body {
   </div>
 
   <div class="messages" id="messages">
-    <div class="welcome-state" id="welcome-state">
-      <div class="welcome-icon">IM</div>
-      <div class="welcome-title">Čau, Matěji.</div>
-      <p class="welcome-sub">Vyber režim nahoře nebo rovnou piš. Jsem tady pro Imals i pro tebe osobně.</p>
-      <div class="quick-actions">
-        <button class="quick-action" onclick="quickSend('Potřebuju pomoct s Imals strategií na po maturitě.')">
-          <span class="qa-icon">📈</span>
-          <span class="qa-label">Imals strategie</span>
-          <span class="qa-desc">Post-maturita plán</span>
-        </button>
-        <button class="quick-action" onclick="quickSend('Pomoz mi s osobním rozvojem a cíli na příštích 3 měsíce.')">
-          <span class="qa-icon">🎯</span>
-          <span class="qa-label">Osobní cíle</span>
-          <span class="qa-desc">Plánování a growth</span>
-        </button>
-        <button class="quick-action" onclick="quickSend('Chci brainstormovat nový nápad.')">
-          <span class="qa-icon">💡</span>
-          <span class="qa-label">Brainstorm</span>
-          <span class="qa-desc">Nápady a projekty</span>
-        </button>
-        <button class="quick-action" onclick="quickSend('Potřebuju napsat profesionální email pro klienta Imals.')">
-          <span class="qa-icon">✉️</span>
-          <span class="qa-label">Email klientovi</span>
-          <span class="qa-desc">Imals komunikace</span>
-        </button>
-      </div>
-    </div>
   </div>
 
   <div class="input-area">
@@ -876,7 +849,7 @@ body {
       <button class="mic-btn" id="mic-btn" onclick="toggleVoice()" title="Hlas">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
       </button>
-      <textarea class="msg-input" id="msg-input" placeholder="Napiš, mluv nebo / pro příkazy..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this);handleSlash(this.value)"></textarea>
+      <textarea class="msg-input" id="msg-input" placeholder="/ pro příkazy..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this);handleSlash(this.value)"></textarea>
       <button class="mic-btn" onclick="toggleTemplates()" title="Šablony" style="color:var(--accent)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       </button>
@@ -1001,6 +974,8 @@ function init() {
 
   const savedModel = localStorage.getItem('imals_model') || 'claude-sonnet-4-5';
   document.getElementById('settings-model').value = savedModel;
+
+  renderWelcome();
 
   const input = document.getElementById('msg-input');
   input.addEventListener('input', () => {
