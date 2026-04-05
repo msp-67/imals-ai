@@ -1003,6 +1003,41 @@ function init() {
   input.addEventListener('input', () => {
     document.getElementById('send-btn').disabled = input.value.trim() === '';
   });
+
+  // Swipe between modes
+  const modeKeys = Object.keys(MODES);
+  let touchStartX = 0;
+  let touchStartY = 0;
+  const chatScreen = document.getElementById('chat-screen');
+
+  chatScreen.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  chatScreen.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.8) return;
+    const activeTab = document.querySelector('.mode-tab.active');
+    const tabs = Array.from(document.querySelectorAll('.mode-tab'));
+    const idx = tabs.indexOf(activeTab);
+    let next;
+    if (dx < 0 && idx < tabs.length - 1) next = tabs[idx + 1];
+    if (dx > 0 && idx > 0) next = tabs[idx - 1];
+    if (next) {
+      setMode(next);
+      haptic('light');
+      showToast(MODES[next.dataset.mode].label);
+    }
+  }, { passive: true });
+}
+
+function haptic(style) {
+  if (navigator.vibrate) {
+    const patterns = { light: [10], medium: [20], heavy: [30, 10, 30] };
+    navigator.vibrate(patterns[style] || [10]);
+  }
 }
 
 function showScreen(id) {
@@ -1193,6 +1228,7 @@ async function sendMessage() {
 
   messages.push({ role: 'user', content: text });
   addMsg('user', text);
+  haptic('light');
   addTyping();
 
   const sp = localStorage.getItem('imals_system_prompt') || DEFAULT_SYSTEM_PROMPT;
@@ -1219,6 +1255,7 @@ async function sendMessage() {
     const reply = data.content[0].text;
     messages.push({ role: 'assistant', content: reply });
     addMsg('ai', reply);
+    haptic('medium');
     saveCurrentChat();
   } catch (e) {
     removeTyping();
