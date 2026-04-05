@@ -815,6 +815,9 @@ body {
       </div>
     </div>
     <div class="header-right">
+      <button class="icon-btn" onclick="exportCurrentChat()" title="Exportovat">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </button>
       <button class="icon-btn" onclick="showScreen('history-screen')" title="Historie">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       </button>
@@ -1225,6 +1228,14 @@ async function sendMessage() {
   isLoading = false;
 }
 
+function exportCurrentChat() {
+  if (messages.length === 0) { showToast('Žádné zprávy k exportu'); return; }
+  const title = messages[0].content.slice(0, 40);
+  const text = `IMALS AI — ${title}\n${new Date().toLocaleString('cs-CZ')}\n${'─'.repeat(40)}\n\n` +
+    messages.map(m => `${m.role === 'user' ? 'Matěj' : 'IMALS AI'}:\n${m.content}`).join('\n\n─────\n\n');
+  navigator.clipboard.writeText(text).then(() => showToast('Chat zkopírován ✓'));
+}
+
 function saveCurrentChat() {
   if (messages.length === 0) return;
   const title = messages[0].content.slice(0, 50) + (messages[0].content.length > 50 ? '…' : '');
@@ -1245,15 +1256,46 @@ function renderHistory() {
     return;
   }
   list.innerHTML = allChats.map(c => `
-    <div class="history-item" onclick="loadChat('${c.id}')">
-      <div class="history-item-title">${c.title}</div>
-      <div class="history-item-meta">
-        <span>${new Date(c.date).toLocaleDateString('cs-CZ')}</span>
-        <span>${c.messages.length} zpráv</span>
-        <span>${MODES[c.mode]?.label || c.mode}</span>
+    <div class="history-item" style="position:relative;">
+      <div onclick="loadChat('${c.id}')" style="flex:1;cursor:pointer;">
+        <div class="history-item-title">${c.title}</div>
+        <div class="history-item-meta">
+          <span>${new Date(c.date).toLocaleDateString('cs-CZ')}</span>
+          <span>${c.messages.length} zpráv</span>
+          <span>${MODES[c.mode]?.label || c.mode}</span>
+        </div>
+        <div class="history-item-preview">${c.preview}</div>
       </div>
-      <div class="history-item-preview">${c.preview}</div>
+      <div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+        <button onclick="exportChat('${c.id}','txt')" style="flex:1;padding:7px;background:var(--bg4);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;cursor:pointer;">⬇ .txt</button>
+        <button onclick="exportChat('${c.id}','copy')" style="flex:1;padding:7px;background:var(--bg4);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;cursor:pointer;">📋 Kopírovat</button>
+        <button onclick="deleteChat('${c.id}')" style="padding:7px 10px;background:rgba(229,62,62,0.08);border:1px solid rgba(229,62,62,0.2);border-radius:8px;color:#fc8181;font-size:12px;cursor:pointer;">🗑</button>
+      </div>
     </div>`).join('');
+}
+
+function exportChat(id, mode) {
+  const chat = allChats.find(c => c.id === id);
+  if (!chat) return;
+  const text = `IMALS AI — ${chat.title}\n${new Date(chat.date).toLocaleString('cs-CZ')}\n${'─'.repeat(40)}\n\n` +
+    chat.messages.map(m => `${m.role === 'user' ? 'Matěj' : 'IMALS AI'}:\n${m.content}`).join('\n\n─────\n\n');
+  if (mode === 'copy') {
+    navigator.clipboard.writeText(text).then(() => showToast('Zkopírováno ✓'));
+  } else {
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `imals-ai-${chat.title.slice(0,30).replace(/\s+/g,'-')}.txt`;
+    a.click();
+    showToast('Staženo ✓');
+  }
+}
+
+function deleteChat(id) {
+  allChats = allChats.filter(c => c.id !== id);
+  localStorage.setItem('imals_chats', JSON.stringify(allChats));
+  renderHistory();
+  showToast('Chat smazán');
 }
 
 function loadChat(id) {
