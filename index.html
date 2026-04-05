@@ -896,6 +896,14 @@ body {
   <div class="settings-list">
     <div class="settings-section-title">API</div>
     <div class="settings-item settings-item-full">
+      <div class="settings-item-label">Model</div>
+      <div class="settings-item-sub">Sonnet = rychlejší a levnější, Opus = chytřejší</div>
+      <select id="settings-model" onchange="saveModel(this.value)" style="background:var(--bg4);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:var(--font-body);font-size:13px;padding:10px 12px;width:100%;margin-top:8px;outline:none;cursor:pointer;">
+        <option value="claude-sonnet-4-5">Claude Sonnet 4.5 (rychlý)</option>
+        <option value="claude-opus-4-5">Claude Opus 4.5 (chytrý)</option>
+      </select>
+    </div>
+    <div class="settings-item settings-item-full">
       <div class="settings-item-label">Claude API klíč</div>
       <div class="settings-item-sub">Uložen lokálně v prohlížeči</div>
       <input type="password" id="settings-api-key" placeholder="sk-ant-api03-...">
@@ -972,6 +980,9 @@ function init() {
   const sp = localStorage.getItem('imals_system_prompt') || DEFAULT_SYSTEM_PROMPT;
   document.getElementById('settings-system-prompt').value = sp;
 
+  const savedModel = localStorage.getItem('imals_model') || 'claude-sonnet-4-5';
+  document.getElementById('settings-model').value = savedModel;
+
   const input = document.getElementById('msg-input');
   input.addEventListener('input', () => {
     document.getElementById('send-btn').disabled = input.value.trim() === '';
@@ -1007,6 +1018,11 @@ function saveSystemPrompt() {
   const sp = document.getElementById('settings-system-prompt').value.trim();
   localStorage.setItem('imals_system_prompt', sp);
   showToast('Prompt uložen ✓');
+}
+
+function saveModel(val) {
+  localStorage.setItem('imals_model', val);
+  showToast(val.includes('opus') ? 'Opus — chytrý režim ✓' : 'Sonnet — rychlý režim ✓');
 }
 
 function setMode(btn) {
@@ -1120,7 +1136,7 @@ async function sendMessage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
-        model: 'claude-opus-4-5',
+        model: localStorage.getItem('imals_model') || 'claude-sonnet-4-5',
         max_tokens: 1024,
         system: fullPrompt,
         messages: messages
