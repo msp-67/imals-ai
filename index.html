@@ -871,11 +871,24 @@ body {
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
       </button>
       <textarea class="msg-input" id="msg-input" placeholder="Napiš nebo mluv..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="mic-btn" onclick="toggleTemplates()" title="Šablony" style="color:var(--accent)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </button>
       <button class="send-btn" id="send-btn" onclick="sendMessage()" disabled>
         <svg class="send-icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </button>
     </div>
   </div>
+</div>
+
+<!-- TEMPLATES PANEL -->
+<div id="templates-overlay" onclick="closeTemplates()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:50;"></div>
+<div id="templates-panel" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border2);border-radius:20px 20px 0 0;z-index:51;max-height:70vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom);">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;">
+    <span style="font-family:var(--font-display);font-weight:700;font-size:16px;">Šablony</span>
+    <button onclick="closeTemplates()" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;line-height:1;">×</button>
+  </div>
+  <div id="templates-list" style="padding:0 12px 20px;display:flex;flex-direction:column;gap:6px;"></div>
 </div>
 
 <!-- HISTORY SCREEN -->
@@ -1023,6 +1036,58 @@ function saveSystemPrompt() {
 function saveModel(val) {
   localStorage.setItem('imals_model', val);
   showToast(val.includes('opus') ? 'Opus — chytrý režim ✓' : 'Sonnet — rychlý režim ✓');
+}
+
+const TEMPLATES = [
+  { category: '📈 Imals', label: 'Nabídka pro klienta', prompt: 'Napiš profesionální nabídku služeb performance marketingu pro klienta v realitách. Zahrň: co děláme, výsledky které přinášíme, a cenový rámec.' },
+  { category: '📈 Imals', label: 'Followup email', prompt: 'Napiš followup email klientovi který nereagoval na naši nabídku. Tón: přátelský, nenásilný, s konkrétní výzvou k akci.' },
+  { category: '📈 Imals', label: 'Měsíční report', prompt: 'Pomoz mi sestavit měsíční report výsledků pro klienta. Potřebuji strukturu: shrnutí, výsledky kampaní, co jsme se naučili, plán na příští měsíc.' },
+  { category: '📈 Imals', label: 'Instagram post', prompt: 'Napiš Instagram post pro realitního makléře. Cíl: budování důvěry a generování leadů. Tón: profesionální ale lidský.' },
+  { category: '📈 Imals', label: 'Cold outreach', prompt: 'Napiš cold email/zprávu pro oslovení potenciálního klienta v realitách. Krátký, konkrétní, s jasnou hodnotovou propozicí Imals.' },
+  { category: '🧠 Osobní', label: 'Týdenní review', prompt: 'Pomoz mi udělat týdenní review. Co jsem splnil, co ne a proč, co je priorita na příští týden. Ptej se mě strukturovaně.' },
+  { category: '🧠 Osobní', label: 'Rozhodovací rámec', prompt: 'Stojím před rozhodnutím a potřebuji pomoct. Pomoz mi ho strukturovaně promyslet — pro a proti, dlouhodobý dopad, co bych si řekl za 5 let.' },
+  { category: '🧠 Osobní', label: 'Brainstorm nápad', prompt: 'Chci brainstormovat nový nápad nebo projekt. Rozvíjej ho se mnou, ptej se, navrhuj úhly pohledu které mě možná nenapadly.' },
+  { category: '🎯 Coach', label: 'Drž mě zodpovědného', prompt: 'Chci ti říct co jsem si naplánoval a co jsem skutečně udělal. Buď přímý coach — pochval co má cenu chválit, ale nemazli to kde jsem selhal.' },
+  { category: '🎯 Coach', label: 'Cíle na měsíc', prompt: 'Pomoz mi nastavit cíle na příští měsíc. Chci cíle pro Imals, osobní rozvoj a zdraví. Ptej se mě a pomoz mi je formulovat SMART.' },
+];
+
+function toggleTemplates() {
+  const panel = document.getElementById('templates-panel');
+  const overlay = document.getElementById('templates-overlay');
+  if (panel.style.display === 'none') {
+    renderTemplates();
+    panel.style.display = 'block';
+    overlay.style.display = 'block';
+  } else {
+    closeTemplates();
+  }
+}
+
+function closeTemplates() {
+  document.getElementById('templates-panel').style.display = 'none';
+  document.getElementById('templates-overlay').style.display = 'none';
+}
+
+function renderTemplates() {
+  const list = document.getElementById('templates-list');
+  const categories = [...new Set(TEMPLATES.map(t => t.category))];
+  list.innerHTML = categories.map(cat => `
+    <div style="font-size:12px;font-weight:600;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;padding:10px 4px 6px;">${cat}</div>
+    ${TEMPLATES.filter(t => t.category === cat).map(t => `
+      <button onclick="useTemplate(${JSON.stringify(t.prompt).replace(/"/g, '&quot;')})"
+        style="text-align:left;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;transition:border-color 0.15s;width:100%;">
+        <span style="font-size:14px;font-weight:500;color:var(--text);">${t.label}</span>
+        <span style="display:block;font-size:12px;color:var(--text3);margin-top:3px;font-weight:300;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.prompt.slice(0, 60)}…</span>
+      </button>`).join('')}
+  `).join('');
+}
+
+function useTemplate(prompt) {
+  closeTemplates();
+  document.getElementById('msg-input').value = prompt;
+  autoResize(document.getElementById('msg-input'));
+  document.getElementById('send-btn').disabled = false;
+  document.getElementById('msg-input').focus();
 }
 
 function setMode(btn) {
